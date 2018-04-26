@@ -1,29 +1,31 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
 
 public static class CommandHistory
 {
+	public static event Action OnHistoryReachedMax = delegate { };
+
 	private const int HISTORY_MAX_LENGTH = 2000;
 	private const float HISTORY_EXPIRATION_TIME = 10f;
 
-	private static int lastFrame = 0;
+	private static int lastFrameCount = 0;
 	private static List<Frame> _history = new List<Frame>(HISTORY_MAX_LENGTH);
 
 	private static uint _historyMilliseconds = 0;
 
 	public static void AddCommands(ReadOnlyCollection<ICommand> newCommands)
 	{
-		TrimHistory();
-
-		if (Time.frameCount != lastFrame)
+		if (Time.frameCount != lastFrameCount)
 		{
+			TrimHistory();
 			AddFrameToHistory(Time.deltaTime);
-			lastFrame = Time.frameCount;
+			lastFrameCount = Time.frameCount;
 		}
 
-		_history[_history.Count - 1].AddCommands(newCommands);
+		GetLastFrame().AddCommands(newCommands);
 	}
 
 	public static int GetFrameCount()
@@ -42,9 +44,14 @@ public static class CommandHistory
 		return result;
 	}
 
+	private static Frame GetLastFrame()
+	{
+		return _history[_history.Count - 1];
+	}
+
 	private static void AddFrameToHistory(float deltaTime)
 	{
-		uint discreteTime = (uint)Mathf.RoundToInt(deltaTime * 1000f);
+		uint discreteTime = ToMilliseconds(deltaTime);
 		_historyMilliseconds += discreteTime;
 
 		_history.Add(new Frame(deltaTime));
@@ -55,8 +62,18 @@ public static class CommandHistory
 		float deltaTime = _history[index].deltaTime;
 		_history.RemoveAt(0);
 
-		uint discreteTime = (uint)Mathf.RoundToInt(deltaTime * 1000f);
+		uint discreteTime = ToMilliseconds(deltaTime);
 		_historyMilliseconds -= discreteTime;
+	}
+
+	private static uint ToMilliseconds(float time)
+	{
+		return (uint)Mathf.FloorToInt(time * 1000f);
+	}
+
+	private static float FromMilliseconds(uint milliseconds)
+	{
+		return (float)milliseconds / 1000f;
 	}
 
 	/// <summary>
@@ -101,22 +118,98 @@ public static class CommandHistory
 		throw new System.NotImplementedException();
 	}
 
+	public static bool ReplayFrame(int frame)
+	{
+		if (frame < 0 || frame > _history.Count - 1)
+			return false;
+
+		_history[frame].ExecuteAll();
+
+		return true;
+	}
+
+	private static int FindTimeFrame(float time)
+	{
+		// guess the starting point (assume all frames are same length)
+		uint startTimeMilliseconds = ToMilliseconds(time);
+
+		float progressFraction = startTimeMilliseconds / (float)_historyMilliseconds;
+
+		int framePtr = Mathf.RoundToInt(_history.Count * progressFraction);
+
+		float historyTime = 0;
+
+		if (progressFraction < 0.5f)
+		{
+			// count forwards...
+			for (int i = 0; i < _history.Count; i++)
+			{
+				if (i > framePtr)
+					break;
+
+				historyTime += _history[i].deltaTime;
+			}
+		}
+		else
+		{
+			// count backwards...
+			historyTime = FromMilliseconds(_historyMilliseconds);
+			for (int i = _history.Count - 1; i >= 0; i--)
+			{
+				if (i < framePtr)
+					break;
+
+				historyTime -= _history[i].deltaTime;
+			}
+		}
+
+		if (historyTime < time)
+		{
+			// go forward...
+			while (historyTime < time)
+			{
+				framePtr++;
+				historyTime += _history[framePtr].deltaTime;
+			}
+
+		}
+		else
+		{
+			// go backward...
+			while (historyTime > time)
+			{
+				framePtr--;
+				historyTime -= _history[framePtr].deltaTime;
+			}
+
+			framePtr++;
+		}
+
+		return framePtr;
+	}
+
 	private static void TrimHistory()
 	{
+		if (_history.Count > HISTORY_MAX_LENGTH - 1)
+			OnHistoryReachedMax();
+
 		while (_history.Count > HISTORY_MAX_LENGTH - 1)
 		{
+			
 			RemoveFrameFromHistory(0);
 		}
+
+		if (_historyMilliseconds > HISTORY_EXPIRATION_TIME * 1000)
+			OnHistoryReachedMax();
 
 		while (_historyMilliseconds > HISTORY_EXPIRATION_TIME * 1000)
 		{
 			RemoveFrameFromHistory(0);
 		}
 	}
-	
+
 	private class Frame
 	{
-		//public float time;
 		public float deltaTime;
 		public List<ICommand> commands;
 
@@ -129,6 +222,14 @@ public static class CommandHistory
 		public void AddCommands(ReadOnlyCollection<ICommand> newCommands)
 		{
 			commands.AddRange(newCommands);
+		}
+
+		public void ExecuteAll()
+		{
+			for (int i = 0; i < commands.Count; i++)
+			{
+				commands[i].Execute(deltaTime);
+			}
 		}
 	}
 }

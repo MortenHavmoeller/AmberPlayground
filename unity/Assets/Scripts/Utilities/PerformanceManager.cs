@@ -6,7 +6,7 @@ public class PerformanceManager : MonoBehaviour
 {
 	private void Start()
 	{
-		Application.targetFrameRate = 60;
+		Application.targetFrameRate = 20;
 		QualitySettings.vSyncCount = 1;
 	}
 

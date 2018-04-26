@@ -32,9 +32,12 @@ public class PlayerCharacter : MonoBehaviour, ICharacter
 
 	private void Update()
 	{
-		ReadOnlyCollection<ICommand> commands = playerInput.HandleInput();
-		ExecuteCommands(commands);
-		SaveCommands(commands);
+		if (playerInput != null)
+		{
+			ReadOnlyCollection<ICommand> commands = playerInput.HandleInput();
+			ExecuteCommands(commands);
+			SaveCommands(commands);
+		}
 
 		transform.position += velocity;
 
@@ -64,5 +67,10 @@ public class PlayerCharacter : MonoBehaviour, ICharacter
 	{
 		CommandHistory.AddCommands(commands);
 		//Debug.Log("Command history frame count: " + CommandHistory.GetFrameCount() + "\nCommand history command count: " + CommandHistory.GetCommandCount());
+	}
+
+	public void Lobotomize()
+	{
+		playerInput = null;
 	}
 }
