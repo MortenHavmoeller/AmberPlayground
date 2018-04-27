@@ -8,13 +8,16 @@ public class Test_SaveableClass : SaveableData
 	public string text;
 	public int number;
 
-	public GuidRef<PlayerCharacter> player;
+	public Vector3 vector;
+
+	public PlayerCharacter player;
 	
-	public Test_SaveableClass(string text, int number, PlayerCharacter player)
+	public Test_SaveableClass(string text, int number, Vector3 vector, PlayerCharacter player)
 	{
 		this.text = text;
 		this.number = number;
-		this.player = GuidRef<PlayerCharacter>.Create(player);
+		this.vector = vector;
+		this.player = player;
 	}
 
 }
