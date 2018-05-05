@@ -11,7 +11,6 @@ public abstract class SaveableData
 {
 	public string saveableDataRootString = "parent-class-string";
 	
-
 	public bool Save(string path, string filename, string extension)
 	{
 		// check if class type is marked as serializable
@@ -57,7 +56,7 @@ public abstract class SaveableData
 		try
 		{
 			AmberBinaryFormatter binaryFormatter = new AmberBinaryFormatter();
-			string fullPath = Application.persistentDataPath + filename + extension;
+			string fullPath = Application.persistentDataPath + "/" + filename + extension;
 
 			using (FileStream fileStream = File.Open(fullPath, FileMode.OpenOrCreate))
 			{

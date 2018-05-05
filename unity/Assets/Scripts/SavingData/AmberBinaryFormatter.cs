@@ -18,7 +18,9 @@ public class AmberBinaryFormatter
 		// add surrogates
 		Vector3_SerializationSurrogate vector3SS = new Vector3_SerializationSurrogate();
 		surrogateSelector.AddSurrogate(typeof(Vector3), new StreamingContext(StreamingContextStates.All), vector3SS);
-		
+		Quaternion_SerializationSurrogate quaternionSS = new Quaternion_SerializationSurrogate();
+		surrogateSelector.AddSurrogate(typeof(Quaternion), new StreamingContext(StreamingContextStates.All), quaternionSS);
+
 		// apply to binary formatter
 		internalBinaryFormatter.SurrogateSelector = surrogateSelector;
 	}

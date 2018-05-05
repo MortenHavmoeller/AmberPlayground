@@ -11,13 +11,16 @@ public class Test_SaveableClass : SaveableData
 
 	public Vector3 vector;
 
+	public Quaternion quaternion;
+
 	//public PlayerCharacter player;
 	
-	public Test_SaveableClass(string text, int number, Vector3 vector, PlayerCharacter player)
+	public Test_SaveableClass(string text, int number, Vector3 vector, Quaternion quaternion, PlayerCharacter player)
 	{
 		this.text = text;
 		this.number = number;
 		this.vector = vector;
+		this.quaternion = quaternion;
 		//this.player = player;
 	}
 
